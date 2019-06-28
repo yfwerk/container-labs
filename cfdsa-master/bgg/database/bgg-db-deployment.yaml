@@ -1,0 +1,82 @@
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: workshop02-bgg-db-ns
+# ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bgg-db-deployment
+  namespace: workshop02-bgg-db-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bgg-db-pod
+  # The following can be defined in another fill
+  # Deployment will match by the labels define in the Pod yaml config
+  template:
+    metadata:
+      name: bgg-db-pod
+      # kubernetes works with label, anything with the label will receieve the request
+      labels:
+        app.kubernetes.io/name: bgg-db-pod
+        app.kubernetes.io/version: "v1"
+        owner: yaofeng
+    spec:
+      volumes:
+        - name: dbvol
+          persistentVolumeClaim:
+            claimName: bggdbpvc
+      # The following with check that the mounted path is sucessfull before the container begin to start
+      initContainers:
+          - name: mydb-vol-scrub
+            image: busybox
+            command: ["/bin/sh", "-c", "test -e /scrub && rm -rf /scrub/..?* /scrub/.[!.]* /scrub/*  && test -z \"$(ls -A /scrub)\" || exit 1"]
+            volumeMounts:
+              - name: dbvol
+                mountPath: /scrub
+      containers:
+      - name: bgg-db-pod
+        image: stackupiss/bgg-db:v1
+        imagePullPolicy: Always
+        # resources:
+        #   limits:
+        #     memory: "2Gi"
+        #     cpu: "1000m"
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "changeit"
+          - name: MYSQL_DATABASE
+            value: "bgg"
+          # - name: "TestVariable"
+          #   valueFrom:
+          #     configMapKeyRef:
+          #       key: mysqlPort
+          #       name: bggconfigmap
+        # These are the port which the "container" will be exposing
+        ports:
+          - name: bgg-db-pod
+            containerPort: 3306
+        volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: dbvol
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bgg-db-svc
+  namespace: workshop02-bgg-db-ns
+  labels:
+    name: bgg-db-svc
+spec:
+  type: ClusterIP
+  selector:
+      app.kubernetes.io/name: bgg-db-pod
+  ports:
+    # port is the service port
+    - name: mysql-port-svc
+      port: 3306
+    # targetPort is the internal container port
+    # can be either port number or the port name declar in pod
+      targetPort: bgg-db-pod

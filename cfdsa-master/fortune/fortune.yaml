@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fortune-pod
+  namespace: default
+  # kubernetes works with label, anything with the label will receieve the request
+  labels:
+    app.kubernetes.io/name: fortune-pod
+    app.kubernetes.io/version: "v1"
+    owner: yaofeng
+
+spec:
+  containers:
+  - name: fortune-pod
+    image: dulcet/forture
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+    env:
+      - name: APP_PORT
+        value: "3000"    
+    # These are the port which the "container" will be exposing
+    ports:
+      - name: forturn-port
+        containerPort: 3000

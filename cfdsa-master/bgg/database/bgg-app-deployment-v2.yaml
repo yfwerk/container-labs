@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bgg-app-deployment-v2
+  namespace: workshop02-bgg-db-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bgg-app-pod
+      app.kubernetes.io/version: "v2"
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  # The following can be defined in another fill
+  # Deployment will match by the labels define in the Pod yaml config
+  template:
+    metadata:
+      name: bgg-app-pod
+      # kubernetes works with label, anything with the label will receieve the request
+      labels:
+        app.kubernetes.io/name: bgg-app-pod
+        app.kubernetes.io/version: "v2"
+        owner: yaofeng
+    spec:
+      containers:
+      - name: bgg-app-pod
+        # image: stackupiss/bgg-app:v1
+        image: stackupiss/bgg-app:v2
+        imagePullPolicy: Always
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "changeit"
+          - name: MYSQL_DATABASE
+            value: "bgg"
+          - name: APP_PORT
+            value: "3000"
+          - name: APP_DIR
+            value: "/app"
+          - name: BGG_DB_HOST
+            value: "bgg-db-svc.workshop02-bgg-db-ns.svc.cluster.local"
+          - name: BGG_DB_PORT
+            value: "3306"
+          - name: BGG_DB_USER
+            value: "root"
+          - name: BGG_DB_PASSWORD
+            value: "changeit"
+        # These are the port which the "container" will be exposing
+        ports:
+          - name: bgg-app-pod
+            containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bgg-app-svc-v2
+  namespace: workshop02-bgg-db-ns
+  labels:
+    name: bgg-app-svc-v2
+spec:
+  type: ClusterIP
+  selector:
+      app.kubernetes.io/name: bgg-app-pod
+      app.kubernetes.io/version: "v2"
+  ports:
+    # port is the service port
+    - name: bgg-app-svc-port
+      port: 8080
+    # targetPort is the internal container port
+    # can be either port number or the port name declar in pod
+      targetPort: bgg-app-pod

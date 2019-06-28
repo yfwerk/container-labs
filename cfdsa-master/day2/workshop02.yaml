@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workshop02-ns
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortune-deployment
+  namespace: workshop02-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fortune-pod
+  # The following can be defined in another fill
+  # Deployment will match by the labels define in the Pod yaml config
+  template:
+    metadata:
+      name: fortune-pod
+      # kubernetes works with label, anything with the label will receieve the request
+      labels:
+        app.kubernetes.io/name: fortune-pod
+        app.kubernetes.io/version: "v1"
+        owner: yaofeng
+    spec:
+      containers:
+      - name: fortune-pod
+        image: dulcet/forture
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        env:
+          - name: APP_PORT
+            value: "3000"    
+        # These are the port which the "container" will be exposing
+        ports:
+          - name: forturn-port
+            containerPort: 3000

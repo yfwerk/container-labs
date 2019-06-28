@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bggconfigmap
+  namespace: workshop02-bgg-db-ns
+data:
+  mysqlPort: "3306"
